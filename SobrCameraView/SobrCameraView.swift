@@ -103,8 +103,8 @@ open class SobrCameraView: UIView, AVCaptureVideoDataOutputSampleBufferDelegate 
     */
     open override func awakeFromNib() {
         super.awakeFromNib()
-        NotificationCenter.default.addObserver(self, selector: #selector(SobrCameraView._backgroundMode), name: NSNotification.Name.UIApplicationWillResignActive, object: nil)
-        NotificationCenter.default.addObserver(self, selector: #selector(SobrCameraView._foregroundMode), name: NSNotification.Name.UIApplicationDidBecomeActive, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(SobrCameraView._backgroundMode), name: UIApplication.willResignActiveNotification, object: nil)
+        NotificationCenter.default.addObserver(self, selector: #selector(SobrCameraView._foregroundMode), name: UIApplication.didBecomeActiveNotification, object: nil)
     }
     
     deinit {
@@ -252,14 +252,13 @@ open class SobrCameraView: UIView, AVCaptureVideoDataOutputSampleBufferDelegate 
             
             if self.borderDetectionEnabled && self.detectionConfidenceValid() {
                 if let rectangleFeature = self.biggestRectangle(SobrCameraView.highAccuracyRectangleDetector?.features(in: enhancedImage) as! [CIRectangleFeature]) {
-                    rectangleFeature
                     enhancedImage = self.perspectiveCorrectedImage(enhancedImage, feature: rectangleFeature)
                 }
             }
             
             UIGraphicsBeginImageContext(CGSize(width: enhancedImage.extent.size.height, height: enhancedImage.extent.size.width))
             
-            UIImage(ciImage: enhancedImage, scale: 1.0, orientation: UIImageOrientation.right).draw(in: CGRect(x: 0, y: 0, width: enhancedImage.extent.size.height, height: enhancedImage.extent.size.width))
+            UIImage(ciImage: enhancedImage, scale: 1.0, orientation: UIImage.Orientation.right).draw(in: CGRect(x: 0, y: 0, width: enhancedImage.extent.size.height, height: enhancedImage.extent.size.width))
             
             let image = UIGraphicsGetImageFromCurrentImageContext()
             UIGraphicsEndImageContext()
@@ -296,7 +295,7 @@ open class SobrCameraView: UIView, AVCaptureVideoDataOutputSampleBufferDelegate 
         
         self.context = EAGLContext(api: .openGLES2)
         self.glkView = GLKView(frame: self.bounds, context: self.context!)
-        self.glkView!.autoresizingMask = ([UIViewAutoresizing.flexibleWidth, UIViewAutoresizing.flexibleHeight])
+        self.glkView!.autoresizingMask = ([UIView.AutoresizingMask.flexibleWidth, UIView.AutoresizingMask.flexibleHeight])
         self.glkView!.translatesAutoresizingMaskIntoConstraints = true
         self.glkView!.contentScaleFactor = 1.0
         self.glkView!.drawableDepthFormat = .format24
@@ -304,16 +303,16 @@ open class SobrCameraView: UIView, AVCaptureVideoDataOutputSampleBufferDelegate 
         glGenRenderbuffers(1, &self.renderBuffer)
         glBindRenderbuffer(GLenum(GL_RENDERBUFFER), self.renderBuffer)
         
-        self.coreImageContext = CIContext(eaglContext: self.context!, options: [kCIContextUseSoftwareRenderer: true])
+        self.coreImageContext = CIContext(eaglContext: self.context!, options: [CIContextOption.useSoftwareRenderer: true])
         EAGLContext.setCurrent(self.context!)
     }
     
     fileprivate func contrastFilter(_ image: CIImage) -> CIImage {
-        return CIFilter(name: "CIColorControls", withInputParameters: ["inputContrast":1.1, kCIInputImageKey: image])!.outputImage!
+        return CIFilter(name: "CIColorControls", parameters: ["inputContrast":1.1, kCIInputImageKey: image])!.outputImage!
     }
     
     fileprivate func enhanceFilter(_ image: CIImage) -> CIImage {
-        return CIFilter(name: "CIColorControls", withInputParameters: ["inputBrightness":0.0, "inputContrast":1.14, "inputSaturation":0.0, kCIInputImageKey: image])!.outputImage!
+        return CIFilter(name: "CIColorControls", parameters: ["inputBrightness":0.0, "inputContrast":1.14, "inputSaturation":0.0, kCIInputImageKey: image])!.outputImage!
     }
     
     fileprivate func biggestRectangle(_ rectangles: [CIRectangleFeature]) -> CIRectangleFeature? {
